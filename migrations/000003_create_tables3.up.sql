@@ -1,0 +1,8 @@
+CREATE TABLE likes (
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    story_id UUID REFERENCES stories(id),
+    liked_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    PRIMARY KEY (user_id, story_id)
+);
