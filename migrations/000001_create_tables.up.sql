@@ -17,3 +17,9 @@ CREATE TABLE story_tags (
     tag VARCHAR(50),
     PRIMARY KEY (story_id, tag)
 );
+
+CREATE TABLE authors (
+    id UUID PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    full_name VARCHAR(100) NOT NULL
+);

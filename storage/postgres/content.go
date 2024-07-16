@@ -156,69 +156,104 @@ func (repo *StoryRepository) GetAllStories(ctx context.Context, request *pb.GetA
 }
 
 func (repo *StoryRepository) GetStoryFullInfo(ctx context.Context, request *pb.StoryFullInfoRequest) (*pb.StoryFullInfoResponse, error) {
-	query := `
-		SELECT id, title, content, location, author_id, likes_count, comments_count, created_at, updated_at
+	var story pb.StoryFullInfoResponse
+	var authorId string
+	err := repo.Db.QueryRow(`
+		SELECT id, title, content, location, tags, author_id, created_at, updated_at
 		FROM stories
-		WHERE deleted_at IS NULL AND id = $1
-	`
-	var id, title, content, location, authorID string
-	var likesCount, commentsCount int32
-	var createdAt, updatedAt string
-	err := repo.Db.QueryRow(query, request.StoryId).
-		Scan(&id, &title, &content, &location, &authorID, &likesCount, &commentsCount, &createdAt, &updatedAt)
-	if err != nil {
-		logger.Error("error fetching story")
-		return nil, fmt.Errorf("error fetching story: %v", err)
-	}
-
-	authorQuery := `
-		SELECT username, full_name
-		FROM users
 		WHERE id = $1
-	`
-	var username, fullName string
-	err = repo.Db.QueryRow(authorQuery, authorID).Scan(&username, &fullName)
+	`, request.StoryId).Scan(&story.Id, &story.Title, &story.Content, &story.Location, &story.Tags, &authorId, &story.CreatedAt, &story.UpdatedAt)
 	if err != nil {
-		logger.Error("error fetching author")
-		return nil, fmt.Errorf("error fetching author: %v", err)
+		logger.Error("Error in GetStoryFullInfo")
+		return nil, err
 	}
-
-	tagsQuery := `
-		SELECT tag
-		FROM story_tags
+	
+	story.Author = &pb.Author{Id: authorId}
+	
+	err = repo.Db.QueryRow(`
+		SELECT COUNT(*)
+		FROM likes
 		WHERE story_id = $1
-	`
-	rows, err := repo.Db.Query(tagsQuery, id)
+	`, story.Id).Scan(&story.LikesCount)
 	if err != nil {
-		logger.Error("error fetching tags")
-		return nil, fmt.Errorf("error fetching tags: %v", err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var tags []string
-	for rows.Next() {
-		var tag string
-		if err := rows.Scan(&tag); err != nil {
-			logger.Error("error scanning tag", zap.Error(err))
-			return nil, fmt.Errorf("error scanning tag: %v", err)
-		}
-		tags = append(tags, tag)
+	
+	err = repo.Db.QueryRow(`
+		SELECT COUNT(*)
+		FROM comments
+		WHERE story_id = $1
+	`, story.Id).Scan(&story.CommentsCount)
+	if err != nil {
+		return nil, err
 	}
+	
+	return &story, nil
 
-	response := &pb.StoryFullInfoResponse{
-		Id:            id,
-		Title:         title,
-		Content:       content,
-		Location:      location,
-		Tags:          tags,
-		Author:        &pb.Author{Id: authorID, Username: username, FullName: fullName},
-		LikesCount:    likesCount,
-		CommentsCount: commentsCount,
-		CreatedAt:     createdAt,
-		UpdatedAt:     updatedAt,
-	}
+	
+	// query := `
+	// 	SELECT id, title, content, location, author_id, likes_count, comments_count, created_at, updated_at
+	// 	FROM stories
+	// 	WHERE deleted_at IS NULL AND id = $1
+	// `
+	// var id, title, content, location, authorID string
+	// var likesCount, commentsCount int32
+	// var createdAt, updatedAt string
+	// err := repo.Db.QueryRow(query, request.StoryId).
+	// 	Scan(&id, &title, &content, &location, &authorID, &likesCount, &commentsCount, &createdAt, &updatedAt)
+	// if err != nil {
+	// 	logger.Error("error fetching story")
+	// 	return nil, fmt.Errorf("error fetching story: %v", err)
+	// }
 
-	return response, nil
+	// authorQuery := `
+	// 	SELECT username, full_name
+	// 	FROM users
+	// 	WHERE id = $1
+	// `
+	// var username, fullName string
+	// err = repo.Db.QueryRow(authorQuery, authorID).Scan(&username, &fullName)
+	// if err != nil {
+	// 	logger.Error("error fetching author")
+	// 	return nil, fmt.Errorf("error fetching author: %v", err)
+	// }
+
+	// tagsQuery := `
+	// 	SELECT tag
+	// 	FROM story_tags
+	// 	WHERE story_id = $1
+	// `
+	// rows, err := repo.Db.Query(tagsQuery, id)
+	// if err != nil {
+	// 	logger.Error("error fetching tags")
+	// 	return nil, fmt.Errorf("error fetching tags: %v", err)
+	// }
+	// defer rows.Close()
+
+	// var tags []string
+	// for rows.Next() {
+	// 	var tag string
+	// 	if err := rows.Scan(&tag); err != nil {
+	// 		logger.Error("error scanning tag", zap.Error(err))
+	// 		return nil, fmt.Errorf("error scanning tag: %v", err)
+	// 	}
+	// 	tags = append(tags, tag)
+	// }
+
+	// response := &pb.StoryFullInfoResponse{
+	// 	Id:            id,
+	// 	Title:         title,
+	// 	Content:       content,
+	// 	Location:      location,
+	// 	Tags:          tags,
+	// 	Author:        &pb.Author{Id: authorID, Username: username, FullName: fullName},
+	// 	LikesCount:    likesCount,
+	// 	CommentsCount: commentsCount,
+	// 	CreatedAt:     createdAt,
+	// 	UpdatedAt:     updatedAt,
+	// }
+
+	// return response, nil
 }
 
 func (repo *StoryRepository) CommentStory(ctx context.Context, request *pb.CommentStoryRequest) (*pb.CommentStoryResponse, error) {

@@ -1,0 +1,3 @@
+[submodule "protos/gRPS-proto"]
+	path = protos/gRPS-proto
+	url = git@github.com:TravelTales/gRPS-proto.git
