@@ -1,36 +1,21 @@
 package logger
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"log"
+	"log/slog"
 	"os"
 )
 
-func NewLogger() (*zap.Logger, error) {
-	logFile, err := os.Create("app.log")
+func NewLogger() *slog.Logger {
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+
+	file, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		return nil, err
+		log.Fatalf("error while opening file : %v", err)
 	}
 
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "time",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-	}
-	encoder := zapcore.NewJSONEncoder(encoderConfig)
-	fileWriteSyncer := zapcore.AddSync(logFile)
-	consoleWriteSyncer := zapcore.AddSync(os.Stdout)
-	multiWriteSyncer := zapcore.NewMultiWriteSyncer(fileWriteSyncer, consoleWriteSyncer)
-	core := zapcore.NewCore(encoder, multiWriteSyncer, zapcore.DebugLevel)
-
-	logger := zap.New(core)
-	return logger, nil
+	logger := slog.New(slog.NewTextHandler(file, opts))
+	return logger
 }

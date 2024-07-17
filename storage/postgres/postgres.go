@@ -1,14 +1,27 @@
 package postgres
 
 import (
+	"Content-Service/config"
 	"database/sql"
 	"fmt"
-	"Content-Service/config"
+
 	_ "github.com/lib/pq"
 )
 
-func ConnectionDb() (*sql.DB, error) {
-	cnf := config.Load()
-	conDb := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable", cnf.PostgresHost, cnf.PostgresPort, cnf.PostgresUser, cnf.PostgresDatabase, cnf.PostgresPassword)
-	return sql.Open("postgres", conDb)
+func ConnectDB() (*sql.DB, error) {
+	cfg := config.Load()
+
+	conn := fmt.Sprintf("port = %s host=%s user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Postgres.DB_PORT, cfg.Postgres.DB_HOST, cfg.Postgres.DB_USER, cfg.Postgres.DB_PASSWORD, cfg.Postgres.DB_NAME)
+
+	db, err := sql.Open("postgres", conn)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
