@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -9,44 +9,45 @@ import (
 )
 
 type Config struct {
-	HTTPPort string
-
-	PostgresHost     string
-	PostgresPort     int
-	PostgresUser     string
-	PostgresPassword string
-	PostgresDatabase string
-
-	DefaultOffset string
-	DefaultLimit  string
-
-	TokenKey string
+	Postgres PostgresConfig
+	Server   ServerConfig
 }
 
-func Load() Config {
-	if err := godotenv.Load(); err != nil {
-		fmt.Println("No .env file found")
+type PostgresConfig struct {
+	DB_HOST     string
+	DB_PORT     string
+	DB_USER     string
+	DB_NAME     string
+	DB_PASSWORD string
+}
+
+type ServerConfig struct {
+	USER_PORT string
+}
+
+func Load() *Config {
+	if err := godotenv.Load(".env"); err != nil {
+		log.Printf("error while loading .env file: %v", err)
 	}
 
-	config := Config{}
-
-	config.HTTPPort = cast.ToString(getOrReturnDefaultValue("HTTP_PORT", ":8089"))
-
-	config.PostgresHost = cast.ToString(getOrReturnDefaultValue("POSTGRES_HOST", "localhost"))
-	config.PostgresPort = cast.ToInt(getOrReturnDefaultValue("POSTGRES_PORT", 5432))
-	config.PostgresUser = cast.ToString(getOrReturnDefaultValue("POSTGRES_USER", "macbookpro"))
-	config.PostgresPassword = cast.ToString(getOrReturnDefaultValue("POSTGRES_PASSWORD", "1111"))
-	config.PostgresDatabase = cast.ToString(getOrReturnDefaultValue("POSTGRES_DATABASE", "content"))
-	config.TokenKey = cast.ToString(getOrReturnDefaultValue("TokenKey", "my_secret_key"))
-	return config
+	return &Config{
+		Postgres: PostgresConfig{
+			DB_HOST:     cast.ToString(coalesce("DB_HOST", "localhost")),
+			DB_PORT:     cast.ToString(coalesce("DB_PORT", "5432")),
+			DB_USER:     cast.ToString(coalesce("DB_USER", "macbookpro")),
+			DB_NAME:     cast.ToString(coalesce("DB_NAME", "content")),
+			DB_PASSWORD: cast.ToString(coalesce("DB_PASSWORD", "1111")),
+		},
+		Server: ServerConfig{
+			USER_PORT: cast.ToString(coalesce("USER_PORT", ":50051")),
+		},
+	}
 }
 
-func getOrReturnDefaultValue(key string, defaultValue interface{}) interface{} {
-	val, exists := os.LookupEnv(key)
-
-	if exists {
+func coalesce(key string, value interface{}) interface{} {
+	val, exist := os.LookupEnv(key)
+	if exist {
 		return val
 	}
-
-	return defaultValue
+	return value
 }

@@ -1,0 +1,4 @@
+time=2024-07-17T12:12:51.218+05:00 level=INFO msg="Itineraries rpc method started"
+time=2024-07-17T12:12:51.242+05:00 level=ERROR msg="pq: insert or update on table \"itineraries\" violates foreign key constraint \"itineraries_author_id_fkey\""
+time=2024-07-17T14:37:00.215+05:00 level=INFO msg="CreateTips rpc method started"
+time=2024-07-17T14:37:00.221+05:00 level=INFO msg="CreateTips rpc method finished"

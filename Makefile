@@ -13,7 +13,7 @@ mig-down:
 	migrate -path migrations -database ${DBURL} -verbose down
 
 mig-create:
-	migrate create -ext sql -dir migrations -seq create_tables7
+	migrate create -ext sql -dir migrations -seq create_tables
 
 mig-insert:
 	migrate create -ext sql -dir migrations -seq insert_table
